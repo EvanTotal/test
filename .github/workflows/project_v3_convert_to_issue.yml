@@ -6,7 +6,6 @@ on:
 
 permissions:
   issues: write
-  repository-projects: write
   contents: read
 
 jobs:
@@ -16,7 +15,7 @@ jobs:
       - name: Inherit metadata from Project V2
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_PAT }}
           script: |
             const issueNumber = context.payload.issue.number;
             const issueNodeId = context.payload.issue.node_id;
@@ -24,52 +23,68 @@ jobs:
 
             const projectId = "PVT_kwHODd007c4BEBb_"; // replace with your Project V2 ID
 
-            const query = `
-              query($projectId: ID!) {
-                node(id: $projectId) {
-                  ... on ProjectV2 {
-                    items(first: 50) {
-                      nodes {
-                        id
-                        content {
-                          ... on Issue { id }
-                        }
-                        fieldValues(first: 20) {
+            // Function to fetch all project items with pagination
+            async function fetchAllProjectItems(projectId) {
+              let allItems = [];
+              let hasNextPage = true;
+              let endCursor = null;
+
+              while (hasNextPage) {
+                const query = `
+                  query($projectId: ID!, $after: String) {
+                    node(id: $projectId) {
+                      ... on ProjectV2 {
+                        items(first: 50, after: $after) {
+                          pageInfo { hasNextPage endCursor }
                           nodes {
-                            ... on ProjectV2ItemFieldTextValue {
-                              text
-                              field { ... on ProjectV2FieldCommon { name } }
-                            }
-                            ... on ProjectV2ItemFieldSingleSelectValue {
-                              name
-                              field { ... on ProjectV2FieldCommon { name } }
-                            }
-                            ... on ProjectV2ItemFieldUserValue {
-                              users(first: 5) { nodes { login } }
-                              field { ... on ProjectV2FieldCommon { name } }
-                            }
-                            ... on ProjectV2ItemFieldIterationValue {
-                              title
-                              field { ... on ProjectV2FieldCommon { name } }
-                            }
-                            ... on ProjectV2ItemFieldDateValue {
-                              date
-                              field { ... on ProjectV2FieldCommon { name } }
+                            id
+                            content { ... on Issue { id } }
+                            fieldValues(first: 20) {
+                              nodes {
+                                ... on ProjectV2ItemFieldTextValue {
+                                  text
+                                  field { ... on ProjectV2FieldCommon { name } }
+                                }
+                                ... on ProjectV2ItemFieldSingleSelectValue {
+                                  name
+                                  field { ... on ProjectV2FieldCommon { name } }
+                                }
+                                ... on ProjectV2ItemFieldUserValue {
+                                  users(first: 5) { nodes { login } }
+                                  field { ... on ProjectV2FieldCommon { name } }
+                                }
+                                ... on ProjectV2ItemFieldIterationValue {
+                                  title
+                                  field { ... on ProjectV2FieldCommon { name } }
+                                }
+                                ... on ProjectV2ItemFieldDateValue {
+                                  date
+                                  field { ... on ProjectV2FieldCommon { name } }
+                                }
+                              }
                             }
                           }
                         }
                       }
                     }
                   }
-                }
+                `;
+
+                const variables = { projectId, after: endCursor };
+                const result = await github.graphql(query, variables);
+                const itemsData = result.node.items.nodes;
+                allItems = allItems.concat(itemsData);
+                hasNextPage = result.node.items.pageInfo.hasNextPage;
+                endCursor = result.node.items.pageInfo.endCursor;
               }
-            `;
 
-            const projectData = await github.graphql(query, { projectId });
+              return allItems;
+            }
 
-            const row = projectData.node.items.nodes.find(
-              n => n.content && n.content.id === issueNodeId
-            );
+            const allItems = await fetchAllProjectItems(projectId);
+
+            // Find this issue's row
+            const row = allItems.find(n => n.content && n.content.id === issueNodeId);
             if (!row) {
               console.log("❌ No matching Project V2 row found. Exiting.");
               return;
