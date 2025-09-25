@@ -16,17 +16,14 @@ jobs:
       - name: Inherit metadata from Project V2
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }} # PAT with repo + project scopes
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const issueNumber = context.payload.issue.number;
             const issueNodeId = context.payload.issue.node_id;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
+            const { owner, repo } = context.repo;
 
-            // 🔑 Replace this with your real Project V2 ID
-            const projectId = "PVT_kwHODd007c4BEBb_";
+            const projectId = "PVT_kwHODd007c4BEBb_"; // replace with your Project V2 ID
 
-            // ✅ Correct GraphQL query (field is inside fragments)
             const query = `
               query($projectId: ID!) {
                 node(id: $projectId) {
@@ -35,33 +32,29 @@ jobs:
                       nodes {
                         id
                         content {
-                          ... on Issue {
-                            id
-                          }
+                          ... on Issue { id }
                         }
                         fieldValues(first: 20) {
                           nodes {
                             ... on ProjectV2ItemFieldTextValue {
-                              field { name }
                               text
+                              field { ... on ProjectV2FieldCommon { name } }
                             }
                             ... on ProjectV2ItemFieldSingleSelectValue {
-                              field { name }
                               name
+                              field { ... on ProjectV2FieldCommon { name } }
                             }
                             ... on ProjectV2ItemFieldUserValue {
-                              field { name }
-                              users(first: 5) {
-                                nodes { login }
-                              }
+                              users(first: 5) { nodes { login } }
+                              field { ... on ProjectV2FieldCommon { name } }
                             }
                             ... on ProjectV2ItemFieldIterationValue {
-                              field { name }
                               title
+                              field { ... on ProjectV2FieldCommon { name } }
                             }
                             ... on ProjectV2ItemFieldDateValue {
-                              field { name }
                               date
+                              field { ... on ProjectV2FieldCommon { name } }
                             }
                           }
                         }
@@ -74,7 +67,6 @@ jobs:
 
             const projectData = await github.graphql(query, { projectId });
 
-            // Find this issue’s row in the project
             const row = projectData.node.items.nodes.find(
               n => n.content && n.content.id === issueNodeId
             );
@@ -90,7 +82,6 @@ jobs:
               if (!fieldNode || !fieldNode.field) continue;
               const fieldName = fieldNode.field.name;
 
-              // 🏷️ Labels field
               if (fieldName === "Labels") {
                 if (fieldNode.text) {
                   labelsFromProject = fieldNode.text.split(",").map(s => s.trim());
@@ -99,12 +90,10 @@ jobs:
                 }
               }
 
-              // 👤 Assignees field
               if (fieldName === "Assignees" && fieldNode.users) {
                 assigneesFromProject = fieldNode.users.nodes.map(u => u.login);
               }
 
-              // 📌 Status field → convert into label
               if (fieldName === "Status" && fieldNode.name) {
                 labelsFromProject.push(`Status: ${fieldNode.name}`);
               }
@@ -113,7 +102,6 @@ jobs:
             console.log("Labels to add:", labelsFromProject);
             console.log("Assignees to add:", assigneesFromProject);
 
-            // Apply labels
             if (labelsFromProject.length > 0) {
               await github.rest.issues.addLabels({
                 owner,
@@ -123,7 +111,6 @@ jobs:
               });
             }
 
-            // Apply assignees
             if (assigneesFromProject.length > 0) {
               await github.rest.issues.addAssignees({
                 owner,
