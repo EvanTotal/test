@@ -23,15 +23,15 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            // 🔑 Use your actual Project V2 ID
-            const projectId = "PVT_kwHODd007c4BEBb_"; // <-- replace with your real project ID
+            // 🔑 Replace this with your real Project V2 ID
+            const projectId = "PVT_kwHODd007c4BEBb_";
 
-            // GraphQL query to fetch items + field values
+            // ✅ Correct GraphQL query (field is inside fragments)
             const query = `
               query($projectId: ID!) {
                 node(id: $projectId) {
                   ... on ProjectV2 {
-                    items(first: 100) {
+                    items(first: 50) {
                       nodes {
                         id
                         content {
@@ -54,6 +54,14 @@ jobs:
                               users(first: 5) {
                                 nodes { login }
                               }
+                            }
+                            ... on ProjectV2ItemFieldIterationValue {
+                              field { name }
+                              title
+                            }
+                            ... on ProjectV2ItemFieldDateValue {
+                              field { name }
+                              date
                             }
                           }
                         }
@@ -79,6 +87,7 @@ jobs:
             let assigneesFromProject = [];
 
             for (const fieldNode of row.fieldValues.nodes) {
+              if (!fieldNode || !fieldNode.field) continue;
               const fieldName = fieldNode.field.name;
 
               // 🏷️ Labels field
