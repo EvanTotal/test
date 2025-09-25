@@ -4,11 +4,6 @@ on:
   issues:
     types: [opened]
 
-permissions:
-  issues: write
-  projects: write
-  contents: read
-
 jobs:
   sync_project_info:
     runs-on: ubuntu-latest
