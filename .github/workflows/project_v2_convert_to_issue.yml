@@ -37,7 +37,7 @@ jobs:
               }
             `;
             const allProjects = await github.graphql(findProjectQuery);
-            const projectNode = allProjects.viewer.projectsV2.nodes.find(p => p.title === "Auto_test2_project");
+            const projectNode = allProjects.viewer.projectsV2.nodes.find(p => p.title === "@Auto_test2_project");
 
             if (!projectNode) {
               throw new Error("Project 'Auto_test2_project' not found under your account.");
