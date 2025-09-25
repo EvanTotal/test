@@ -1,9 +1,14 @@
-name: Auto-sync Project Info to Issues
+name: Sync Issue Info to Classic Project
 
 on:
   issues:
     types: [opened]
- 
+
+permissions:
+  issues: write
+  projects: write
+  contents: read
+
 jobs:
   sync_project_info:
     runs-on: ubuntu-latest
@@ -14,14 +19,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const issueNumber = context.payload.issue.number;
+            const issueId = context.payload.issue.id;   // classic projects use numeric id
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const issueNodeId = context.payload.issue.node_id;
 
             // === Customize below ===
-            const labelsToAdd = ["bug", "needs-triage"]; // Default labels
-            const assigneesToAdd = ["EvanTotal"];        // Default assignees
-            const projectColumnId = 232600813;            // Column ID of your project
+            const labelsToAdd = ["bug", "needs-triage"]; // labels to apply
+            const assigneesToAdd = ["EvanTotal"];        // default assignees
+            const projectColumnId = 232600813;            // column id of your Classic Project
 
             // Add labels
             if (labelsToAdd.length > 0) {
@@ -43,9 +48,9 @@ jobs:
               });
             }
 
-            // Add to project (Projects V2)
-            await github.projects.addCard({
+            // Add issue to Classic Project column
+            await github.rest.projects.createCard({
               column_id: projectColumnId,
-              content_id: issueNodeId,
+              content_id: issueId,
               content_type: "Issue"
             });
