@@ -23,7 +23,7 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            // 1️⃣ Find project ID by project name (your Auto_test2_project)
+            // 1️⃣ Find project ID by project name (your @EvanTotal's theproject)
             const findProjectQuery = `
               query {
                 viewer {
@@ -37,10 +37,10 @@ jobs:
               }
             `;
             const allProjects = await github.graphql(findProjectQuery);
-            const projectNode = allProjects.viewer.projectsV2.nodes.find(p => p.title === "@Auto_test2_project");
+            const projectNode = allProjects.viewer.projectsV2.nodes.find(p => p.title === "@EvanTotal's theproject");
 
             if (!projectNode) {
-              throw new Error("Project 'Auto_test2_project' not found under your account.");
+              throw new Error("Project '@EvanTotal's theproject' not found under your account.");
             }
             const projectId = projectNode.id;
             console.log("Found project ID:", projectId);
