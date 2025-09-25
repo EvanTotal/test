@@ -1,0 +1,56 @@
+name: Sync Issue Info to Classic Project
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  projects: write
+  contents: read
+
+jobs:
+  sync_project_info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply project info
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const issueId = context.payload.issue.id;   // classic projects use numeric id
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // === Customize below ===
+            const labelsToAdd = ["bug", "needs-triage"]; // labels to apply
+            const assigneesToAdd = ["EvanTotal"];        // default assignees
+            const projectColumnId = 232600813;            // column id of your Classic Project
+
+            // Add labels
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                labels: labelsToAdd
+              });
+            }
+
+            // Add assignees
+            if (assigneesToAdd.length > 0) {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: assigneesToAdd
+              });
+            }
+
+            // Add issue to Classic Project column
+            await github.rest.projects.createCard({
+              column_id: projectColumnId,
+              content_id: issueId,
+              content_type: "Issue"
+            });
