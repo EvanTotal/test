@@ -21,7 +21,7 @@ jobs:
             // === Customize below ===
             const labelsToAdd = ["bug", "needs-triage"]; // Default labels
             const assigneesToAdd = ["EvanTotal"];        // Default assignees
-            const projectColumnId = 12345678;            // Column ID of your project
+            const projectColumnId = 232600813;            // Column ID of your project
 
             // Add labels
             if (labelsToAdd.length > 0) {
