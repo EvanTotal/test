@@ -16,36 +16,17 @@ jobs:
       - name: Inherit labels and assignees from Project V2
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }} # <-- your PAT
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const issueNumber = context.payload.issue.number;
             const issueNodeId = context.payload.issue.node_id;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            // 1️⃣ Find project ID by project name (your @EvanTotal's theproject)
-            const findProjectQuery = `
-              query {
-                viewer {
-                  projectsV2(first: 20) {
-                    nodes {
-                      id
-                      title
-                    }
-                  }
-                }
-              }
-            `;
-            const allProjects = await github.graphql(findProjectQuery);
-            const projectNode = allProjects.viewer.projectsV2.nodes.find(p => p.title === "@EvanTotal's theproject");
+            // 1️⃣ Use your Project V2 ID directly
+            const projectId = "PVT_kwHODd007c4BEBb_"; // <-- replace with your real Project V2 ID
 
-            if (!projectNode) {
-              throw new Error("Project '@EvanTotal's theproject' not found under your account.");
-            }
-            const projectId = projectNode.id;
-            console.log("Found project ID:", projectId);
-
-            // 2️⃣ Query project rows with union handling
+            // 2️⃣ Query project items with union handling
             const query = `
               query($projectId: ID!) {
                 node(id: $projectId) {
