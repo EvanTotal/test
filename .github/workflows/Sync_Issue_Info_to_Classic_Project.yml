@@ -16,7 +16,7 @@ jobs:
       - name: Apply project info
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.PERSONAL_TOKEN }}
+          github-token: ${{ secrets.test3evan }}
           script: |
             const issueNumber = context.payload.issue.number;
             const issueId = context.payload.issue.id;   // classic projects use numeric id
