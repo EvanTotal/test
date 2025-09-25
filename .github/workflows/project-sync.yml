@@ -1,0 +1,43 @@
+name: Sync project info to issues
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  sync_project_info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply project metadata
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue_number = context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Example: Add labels
+            await github.issues.addLabels({
+              owner,
+              repo,
+              issue_number,
+              labels: ["bug","needs-triage"] // Change these as needed
+            });
+
+            // Example: Assign issue
+            await github.issues.addAssignees({
+              owner,
+              repo,
+              issue_number,
+              assignees: ["EvanTotal"] // Change as needed
+            });
+
+            // Example: Add to a project (Projects V2)
+            // Get your project ID from API, then add item:
+            const project_id = 12345678;
+            await github.projects.addCard({
+              column_id: project_id,
+              content_id: context.payload.issue.node_id,
+              content_type: "Issue"
+            });
+:
