@@ -16,7 +16,7 @@ jobs:
       - name: Inherit labels and assignees from Project V2
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.testing }} # Personal Access Token
+          github-token: ${{ secrets.GITHUB_TOKEN }} # Personal Access Token
           script: |
             const issueNumber = context.payload.issue.number;
             const issueNodeId = context.payload.issue.node_id;
