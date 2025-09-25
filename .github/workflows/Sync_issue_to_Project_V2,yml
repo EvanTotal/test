@@ -1,0 +1,70 @@
+name: Sync Issue to Personal Project V2
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+  projects: write
+
+jobs:
+  sync_issue:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Add labels and assignees using GITHUB_TOKEN
+      - name: Apply labels and assignees
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const labelsToAdd = ["bug","needs-triage"];   // Customize labels
+            const assigneesToAdd = ["EvanTotal"];        // Customize assignees
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                labels: labelsToAdd
+              });
+            }
+
+            if (assigneesToAdd.length > 0) {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: assigneesToAdd
+              });
+            }
+
+      # Step 2: Add issue to Project V2 using PERSONAL_TOKEN
+      - name: Add issue to Project V2
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.test3evan }}  # Your PAT
+          script: |
+            const issueNodeId = context.payload.issue.node_id;
+            const projectId = "PVT_kwHODd007c4BEACq";        // Replace with your Project V2 ID
+
+            const mutation = `
+              mutation($projectId:ID!, $contentId:ID!) {
+                addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                  item { id }
+                }
+              }
+            `;
+
+            const result = await github.graphql(mutation, {
+              projectId: projectId,
+              contentId: issueNodeId
+            });
+
+            console.log("Issue added to Project V2:", result);
