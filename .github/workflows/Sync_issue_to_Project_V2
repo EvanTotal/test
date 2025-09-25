@@ -16,7 +16,7 @@ jobs:
       - name: Add issue to Project V2
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PERSONAL_TOKEN }}
           script: |
             const issueId = context.payload.issue.node_id;
             const projectId = "PVT_kwHODd007c4BEACq"; // <-- Replace with your personal Project V2 ID
