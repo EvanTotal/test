@@ -9,7 +9,7 @@ on:
 permissions:
   issues: write
   contents: read
-  projects: write
+  repository-projects: write
 
 jobs:
   inherit_metadata:
