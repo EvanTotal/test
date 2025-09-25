@@ -1,0 +1,108 @@
+name: Inherit Labels and Assignees from Project V2 Row
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  repository-projects: write
+  contents: read
+
+jobs:
+  inherit_metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inherit labels and assignees from Project V2
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.test3evan }} # Personal Access Token
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const issueNodeId = context.payload.issue.node_id;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Your Project V2 ID
+            const projectId = "PVT_kwHODd007c4BEACq"; // Replace with your Project V2 ID
+
+            // 1️⃣ Query all items in Project V2 to find the row that matches this issue
+            const query = `
+              query($projectId: ID!) {
+                node(id: $projectId) {
+                  ... on ProjectV2 {
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            id
+                          }
+                        }
+                        fieldValues(first: 20) {
+                          nodes {
+                            projectField {
+                              ... on ProjectV2Field {
+                                name
+                              }
+                            }
+                            value
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const projectData = await github.graphql(query, { projectId });
+
+            // Find the row matching the newly created issue
+            const row = projectData.node.items.nodes.find(n => n.content && n.content.id === issueNodeId);
+            if (!row) {
+              console.log("No matching Project V2 row found. Exiting.");
+              return;
+            }
+
+            // 2️⃣ Extract labels and assignees from fields
+            let labelsFromProject = [];
+            let assigneesFromProject = [];
+
+            for (const fieldNode of row.fieldValues.nodes) {
+              const fieldName = fieldNode.projectField.name;
+              const value = fieldNode.value;
+
+              // Customize these field names according to your Project V2 setup
+              if (fieldName === "Labels" && value) {
+                labelsFromProject = value.split(",").map(s => s.trim());
+              }
+              if (fieldName === "Assignees" && value) {
+                assigneesFromProject = value.split(",").map(s => s.trim());
+              }
+            }
+
+            console.log("Labels to add:", labelsFromProject);
+            console.log("Assignees to add:", assigneesFromProject);
+
+            // 3️⃣ Apply labels
+            if (labelsFromProject.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                labels: labelsFromProject
+              });
+            }
+
+            // 4️⃣ Apply assignees
+            if (assigneesFromProject.length > 0) {
+              await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: assigneesFromProject
+              });
+            }
+
+            console.log("Metadata inherited successfully!");
