@@ -1,0 +1,51 @@
+name: Auto-sync Project Info to Issues
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  sync_project_info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply project info
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueNodeId = context.payload.issue.node_id;
+
+            // === Customize below ===
+            const labelsToAdd = ["bug", "needs-triage"]; // Default labels
+            const assigneesToAdd = ["EvanTotal"];        // Default assignees
+            const projectColumnId = 12345678;            // Column ID of your project
+
+            // Add labels
+            if (labelsToAdd.length > 0) {
+              await github.issues.addLabels({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                labels: labelsToAdd
+              });
+            }
+
+            // Add assignees
+            if (assigneesToAdd.length > 0) {
+              await github.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: assigneesToAdd
+              });
+            }
+
+            // Add to project (Projects V2)
+            await github.projects.addCard({
+              column_id: projectColumnId,
+              content_id: issueNodeId,
+              content_type: "Issue"
+            });
