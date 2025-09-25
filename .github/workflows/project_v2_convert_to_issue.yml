@@ -42,15 +42,15 @@ jobs:
                         fieldValues(first: 20) {
                           nodes {
                             ... on ProjectV2ItemFieldTextValue {
-                              projectField { Labels }
+                              Labels { name }
                               text
                             }
                             ... on ProjectV2ItemFieldSingleSelectValue {
-                              projectField { Status }
+                              Status { name }
                               name
                             }
                             ... on ProjectV2ItemFieldUserValue {
-                              projectField { Assignees }
+                              Assignees { name }
                               users(first: 5) {
                                 nodes { login }
                               }
