@@ -16,7 +16,7 @@ jobs:
       - name: Inherit labels and assignees from Project V2
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }} # <-- Your PAT with repo + project scopes
           script: |
             const issueNumber = context.payload.issue.number;
             const issueNodeId = context.payload.issue.node_id;
@@ -42,15 +42,15 @@ jobs:
                         fieldValues(first: 20) {
                           nodes {
                             ... on ProjectV2ItemFieldTextValue {
-                              projectField { name }
+                              field { name }
                               text
                             }
                             ... on ProjectV2ItemFieldSingleSelectValue {
-                              projectField { name }
+                              field { name }
                               name
                             }
                             ... on ProjectV2ItemFieldUserValue {
-                              projectField { name }
+                              field { name }
                               users(first: 5) {
                                 nodes { login }
                               }
@@ -67,7 +67,9 @@ jobs:
             const projectData = await github.graphql(query, { projectId });
 
             // 3️⃣ Find the row that matches this issue
-            const row = projectData.node.items.nodes.find(n => n.content && n.content.id === issueNodeId);
+            const row = projectData.node.items.nodes.find(
+              n => n.content && n.content.id === issueNodeId
+            );
             if (!row) {
               console.log("No matching Project V2 row found for this issue. Exiting.");
               return;
@@ -78,7 +80,7 @@ jobs:
             let assigneesFromProject = [];
 
             for (const fieldNode of row.fieldValues.nodes) {
-              const fieldName = fieldNode.projectField.name;
+              const fieldName = fieldNode.field.name;
 
               if (fieldName === "Labels") {
                 if (fieldNode.text) {
